@@ -9,7 +9,7 @@ typedef DismissDirectionCallback = void Function(DismissDirection direction);
 
 class DismissiblePage extends StatefulWidget {
   DismissiblePage({
-    @required this.child,
+    required this.child,
     this.isFullScreen = true,
     this.disabled = false,
     this.backgroundColor = Colors.black,
@@ -25,13 +25,13 @@ class DismissiblePage extends StatefulWidget {
     this.onDragStart,
     this.onDragEnd,
     this.reverseDuration = const Duration(milliseconds: 500),
-    Key key,
+    Key? key,
   })  : assert(dragStartBehavior != null),
         super(key: key);
 
-  final VoidCallback onDragStart;
-  final VoidCallback onDragEnd;
-  final VoidCallback onDismiss;
+  final VoidCallback? onDragStart;
+  final VoidCallback? onDragEnd;
+  final VoidCallback? onDismiss;
   final bool isFullScreen;
   final double minScale;
   final double minRadius;
@@ -52,9 +52,9 @@ class DismissiblePage extends StatefulWidget {
 
 class _DismissibleState extends State<DismissiblePage>
     with TickerProviderStateMixin {
-  AnimationController _moveController;
-  Animation<Offset> _moveAnimation;
-  AnimationController _resizeController;
+  AnimationController? _moveController;
+  late Animation<Offset> _moveAnimation;
+  AnimationController? _resizeController;
   double _dragExtent = 0.0;
   bool _dragUnderway = false;
 
@@ -82,7 +82,7 @@ class _DismissibleState extends State<DismissiblePage>
         widget.direction == DismissDirection.startToEnd;
   }
 
-  DismissDirection _extentToDirection(double extent) {
+  DismissDirection? _extentToDirection(double extent) {
     if (extent == 0.0) return null;
     if (_directionIsXAxis) {
       switch (Directionality.of(context)) {
@@ -101,59 +101,59 @@ class _DismissibleState extends State<DismissiblePage>
     return extent > 0 ? DismissDirection.down : DismissDirection.up;
   }
 
-  DismissDirection get _dismissDirection => _extentToDirection(_dragExtent);
+  DismissDirection? get _dismissDirection => _extentToDirection(_dragExtent);
 
   bool get _isActive {
-    return _dragUnderway || _moveController.isAnimating;
+    return _dragUnderway || _moveController!.isAnimating;
   }
 
   double get _overallDragAxisExtent {
     final size = context.size;
-    return _directionIsXAxis ? size.width : size.height;
+    return _directionIsXAxis ? size!.width : size!.height;
   }
 
   void _handleDragStart(DragStartDetails details) {
     widget.onDragStart?.call();
     _dragUnderway = true;
-    if (_moveController.isAnimating) {
+    if (_moveController!.isAnimating) {
       _dragExtent =
-          _moveController.value * _overallDragAxisExtent * _dragExtent.sign;
-      _moveController.stop();
+          _moveController!.value * _overallDragAxisExtent * _dragExtent.sign;
+      _moveController!.stop();
     } else {
       _dragExtent = 0.0;
-      _moveController.value = 0.0;
+      _moveController!.value = 0.0;
     }
     setState(() => _updateMoveAnimation());
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
-    if (!_isActive || _moveController.isAnimating || widget.disabled) return;
+    if (!_isActive || _moveController!.isAnimating || widget.disabled) return;
 
     final delta = details.primaryDelta;
     final oldDragExtent = _dragExtent;
     bool _(DismissDirection d) => widget.direction == d;
 
     if (_(DismissDirection.horizontal) || _(DismissDirection.vertical)) {
-      _dragExtent += delta;
+      _dragExtent += delta!;
     } else if (_(DismissDirection.up)) {
-      if (_dragExtent + delta < 0) _dragExtent += delta;
+      if (_dragExtent + delta! < 0) _dragExtent += delta;
     } else if (_(DismissDirection.down)) {
-      if (_dragExtent + delta > 0) _dragExtent += delta;
+      if (_dragExtent + delta! > 0) _dragExtent += delta;
     } else if (_(DismissDirection.endToStart)) {
       switch (Directionality.of(context)) {
         case TextDirection.rtl:
-          if (_dragExtent + delta > 0) _dragExtent += delta;
+          if (_dragExtent + delta! > 0) _dragExtent += delta;
           break;
         default:
-          if (_dragExtent + delta < 0) _dragExtent += delta;
+          if (_dragExtent + delta! < 0) _dragExtent += delta;
       }
     } else if (_(DismissDirection.startToEnd)) {
       switch (Directionality.of(context)) {
         case TextDirection.rtl:
-          if (_dragExtent + delta < 0) _dragExtent += delta;
+          if (_dragExtent + delta! < 0) _dragExtent += delta;
           break;
         default:
-          if (_dragExtent + delta > 0) _dragExtent += delta;
+          if (_dragExtent + delta! > 0) _dragExtent += delta;
       }
     }
 
@@ -161,13 +161,13 @@ class _DismissibleState extends State<DismissiblePage>
       setState(() => _updateMoveAnimation());
     }
 
-    if (!_moveController.isAnimating) {
-      _moveController.value = _dragExtent.abs() / _overallDragAxisExtent;
+    if (!_moveController!.isAnimating) {
+      _moveController!.value = _dragExtent.abs() / _overallDragAxisExtent;
     }
   }
 
   void _updateMoveAnimation() {
-    _moveAnimation = _moveController.drive(
+    _moveAnimation = _moveController!.drive(
       Tween<Offset>(
         begin: Offset.zero,
         end: _directionIsXAxis
@@ -178,14 +178,14 @@ class _DismissibleState extends State<DismissiblePage>
   }
 
   Future<void> _handleDragEnd(DragEndDetails details) async {
-    if (!_isActive || _moveController.isAnimating) return;
-    if (!_moveController.isDismissed) {
-      if (_moveController.value >
-          (widget.dismissThresholds[_dismissDirection] ?? _kDismissThreshold)) {
+    if (!_isActive || _moveController!.isAnimating) return;
+    if (!_moveController!.isDismissed) {
+      if (_moveController!.value >
+          (widget.dismissThresholds[_dismissDirection!] ?? _kDismissThreshold)) {
         widget.onDismiss?.call();
       } else {
-        _moveController.reverseDuration = widget.reverseDuration;
-        _moveController.reverse();
+        _moveController!.reverseDuration = widget.reverseDuration;
+        _moveController!.reverse();
         widget.onDragEnd?.call();
       }
     }
@@ -193,7 +193,7 @@ class _DismissibleState extends State<DismissiblePage>
 
   void _handleDismissStatusChanged(AnimationStatus status) {
     if (status == AnimationStatus.completed && !_dragUnderway) {
-      widget.onDismiss();
+      widget.onDismiss!();
     }
   }
 
@@ -218,7 +218,7 @@ class _DismissibleState extends State<DismissiblePage>
       child: AnimatedBuilder(
         animation: _moveAnimation,
         child: widget.child,
-        builder: (BuildContext context, Widget child) {
+        builder: (BuildContext context, Widget? child) {
           final k = _directionIsXAxis
               ? _moveAnimation.value.dx
               : _moveAnimation.value.dy;
@@ -226,7 +226,7 @@ class _DismissibleState extends State<DismissiblePage>
           final dx = _moveAnimation.value.dx.clamp(0, widget.maxTransformValue);
           final dy = _moveAnimation.value.dy.clamp(0, widget.maxTransformValue);
           final scale = lerpDouble(1, widget.minScale, k);
-          final radius = lerpDouble(widget.minRadius, widget.maxRadius, k);
+          final radius = lerpDouble(widget.minRadius, widget.maxRadius, k)!;
 
           return Container(
             padding: contentPadding,
